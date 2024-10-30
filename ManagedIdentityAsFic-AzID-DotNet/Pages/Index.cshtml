@@ -1,0 +1,18 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Fetch Secret from Key Vault";
+}
+
+
+<h1>@ViewData["Title"]</h1>
+    
+
+<p>    
+    <h3>Here are two examples of using federation with Managed Identity instead of using App Credentials:</h3>
+    <br /><br/><br /><br /><br /><br />
+    <span><strong>Getting a secret from a KeyVault in the same tenant as the App Reg:</strong> @Model.SecretFromSameTenantUsingMsiFic</span>
+    <br /><br /><br />
+    <span><strong>Getting a secret from a KeyVault in a different tenant:</strong> @Model.SecretFromAnotherTenantUsingMsiFic</span>
+    <br />    
+</p>
