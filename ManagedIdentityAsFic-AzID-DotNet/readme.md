@@ -1,4 +1,4 @@
-# Configure an App to Trust a Managed Identity
+# Configure an App to Trust a Managed Identity - Sample
 
 ## Overview
 This sample demonstrates how to configure an Azure-hosted application to authenticate securely using a user-assigned managed identity, avoiding the need for direct credential management. You’ll set up Azure Key Vault, manage identities, and securely access secrets with Azure CLI.
