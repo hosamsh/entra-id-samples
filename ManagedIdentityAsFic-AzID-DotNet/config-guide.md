@@ -122,226 +122,106 @@ resource MyMsiFic 'federatedIdentityCredentials' = {
 ```
 ## Request an access token
 The below code samples are valid in both cases where the resource tenant is in the same tenant as the App Reg and the Managed identity or a different tenant. 
-### MSAL (.Net)
-``` csharp
-using Microsoft.Identity.Client;
 
-using Microsoft.Identity.Client.AppConfig;
-
-  
-
-namespace ficapptest
-
-{
-
-    internal class Program
-
-    {
-
-        static async Task Main(string[] args)
-
-        {
-
-            string appClientId = "YOUR_APP_CLIENT_ID";
-
-            string resourceTenantId = "YOUR_RESOURCE_TENANT_ID";
-
-            Uri authorityUri = new($"https://login.microsoftonline.com/{resourceTenantId}");
-
-            string miClientId = "YOUR_MI_CLIENT_ID";
-
-            string azureRegion = "YOUR_REGION";
-
-            string audience = "api://AzureADTokenExchange";
-
-            // 1. Get mi token to use as assertion
-
-            var miAssertionProvider = async (AssertionRequestOptions _) =>
-
-            {
-
-                // MI tokens are always cached in memory
-
-                var miApplication = ManagedIdentityApplicationBuilder
-
-                    .Create(ManagedIdentityId.WithUserAssignedClientId(miClientId))
-
-                    .Build();
-
-                var miResult = await miApplication.AcquireTokenForManagedIdentity(audience)
-
-                    .ExecuteAsync()
-
-                    .ConfigureAwait(false);
-
-                return miResult.AccessToken;
-
-            };
-
-           // 2. get the federated app credenial
-
-            IConfidentialClientApplication app = ConfidentialClientApplicationBuilder.Create(appClientId)
-
-              .WithAuthority(authorityUri, false)
-
-              .WithClientAssertion(miAssertionProvider)
-
-              // <hosam> WithAzureRegoin is reserved for 1st party according to docs              
-
-               // should remove this for external customer
-
-              .WithAzureRegion(azureRegion)
-
-              .WithCacheOptions(CacheOptions.EnableSharedCacheOptions)
-
-              .Build();
-
-            string[] scopes = ["https://vault.azure.net/.default"];
-
-            AuthenticationResult result = await app.AcquireTokenForClient(scopes)
-
-              .ExecuteAsync()
-
-              .ConfigureAwait(false);
-
-        }
-
-    }
-
-}
-```
 ### Azure.Identity
 ``` csharp
 using Azure.Identity;
-
 using Azure.Security.KeyVault.Secrets;
-
   
-
-namespace ficapptest
-
+internal class Program
 {
+	static void Main(string[] args)
+	{
+	    string appClientId = "YOUR_APP_CLIENT_ID";
+	
+	    string resourceTenantId = "YOUR_RESOURCE_TENANT_ID";
+	
+	    string miClientId = "YOUR_MI_CLIENT_ID"; //<hosam> do we need it?
+	
+	    string audience = "api://AzureADTokenExchange";
+	
+	    // 1. Create the mi assertion
+	    ClientAssertionCredential assertion = new(
+		resourceTenantId,
+		appClientId,
+		async (token) => await GetManagedIdentityToken(miClientId, audience));
+	
+	    // 2. Access the resource
+	    var client = new SecretClient(new Uri($"https://testfickv.vault.azure.net/"), assertion);
+	
+	    // Retrieve the secret
+	    KeyVaultSecret secret = client.GetSecret("VerySecretHiddenString");
+	
+	    // Print the secret value
+	    Console.WriteLine($"Secret Value: {secret.Value}");
+	
+	}
 
-    internal class Program
-
-    {
-
-        static void Main(string[] args)
-
-        {
-
-            string appClientId = "YOUR_APP_CLIENT_ID";
-
-            string resourceTenantId = "YOUR_RESOURCE_TENANT_ID";
-
-            string miClientId = "YOUR_MI_CLIENT_ID"; //<hosam> do we need it?
-
-            string audience = "api://AzureADTokenExchange";
-
-  
-
-            // <hosam> commented should move in the function?
-
-            //var miCredential = new ManagedIdentityCredential(miClientId);
-
-  
-
-            // 1. Create the mi assertion
-
-            // <hosam> can I just use DefaultAzureCredential(); ?
-
-          // no because it must be acquire for specific audience
-
-            // pass msi token as a client assertion
-
-            ClientAssertionCredential assertion = new(
-
-                resourceTenantId,
-
-                appClientId,
-
-                async (token) => await GetManagedIdentityToken(miClientId, audience));
-
-  
-
-            // 2. Access the resource
-
-            var client = new SecretClient(new Uri($"https://testfickv.vault.azure.net/"), assertion);
-
-  
-
-            // Retrieve the secret
-
-            KeyVaultSecret secret = client.GetSecret("VerySecretHiddenString");
-
-  
-
-            // Print the secret value
-
-            Console.WriteLine($"Secret Value: {secret.Value}");
-
-        }
-
-  
-
-        /// <summary>
-
-        /// Gets a token for the user-assigned Managed Identity.
-
-        /// </summary>
-
-        /// <param name="miClientId">Client ID for the Managed Identity.</param>
-
-        /// <param name="audience">Target audience. For public clouds should be api://AzureADTokenExchange.</param>
-
-        /// <returns>If successful, returns an access token.</returns>
-
-        static async Task<string> GetManagedIdentityToken(string miClientId, string audience)
-
-        {
-
-            return (await miCredential.GetTokenAsync(new Azure.Core.TokenRequestContext([$"{audience}/.default"])).ConfigureAwait(false)).Token;
-
-        }
-
-    }
-
+	static async Task<string> GetManagedIdentityToken(string miClientId, string audience)
+	{
+		return (await miCredential.GetTokenAsync(new Azure.Core.TokenRequestContext([$"{audience}/.default"])).ConfigureAwait(false)).Token;
+	}
 }
 ```
 
 ### Microsoft.Identity.Web
 ``` JSON
 {
-
   "AzureAd": {
-
     "Instance": "https://login.microsoftonline.com/",
-
     "ClientId": "YOUR_APPLICATION_ID",
-
     "TenantId": "common",
-
-    "AzureRegion": "YOUR_REGION",
-
    // To call an API
-
    "ClientCredentials": [
-
       {
-
         "SourceType": "SignedAssertionFromManagedIdentity",
-
         "ManagedIdentityClientId": "YOUR_USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID",
-
         "TokenExchangeUrl":"api://AzureADTokenExchange"
-
       }
-
    ]
+  }
+}
+```
 
-  },
+### MSAL (.Net)
+``` csharp
+using Microsoft.Identity.Client;
+using Microsoft.Identity.Client.AppConfig;
 
-  // more here..
+internal class Program
 
+{
+
+	static async Task Main(string[] args)
+	{
+	    string appClientId = "YOUR_APP_CLIENT_ID";
+	    string resourceTenantId = "YOUR_RESOURCE_TENANT_ID";
+	    Uri authorityUri = new($"https://login.microsoftonline.com/{resourceTenantId}");
+	    string miClientId = "YOUR_MI_CLIENT_ID";
+	    string audience = "api://AzureADTokenExchange";
+	
+	    // 1. Get mi token to use as assertion
+	    var miAssertionProvider = async (AssertionRequestOptions _) =>
+	    {
+		var miApplication = ManagedIdentityApplicationBuilder
+		    .Create(ManagedIdentityId.WithUserAssignedClientId(miClientId))
+		    .Build();
+	
+		var miResult = await miApplication.AcquireTokenForManagedIdentity(audience)
+		    .ExecuteAsync()
+		    .ConfigureAwait(false);
+		return miResult.AccessToken;
+	    };
+	
+	   // 2. get the federated app credenial
+	    IConfidentialClientApplication app = ConfidentialClientApplicationBuilder.Create(appClientId)
+	      .WithAuthority(authorityUri, false)
+	      .WithClientAssertion(miAssertionProvider)
+	      .WithCacheOptions(CacheOptions.EnableSharedCacheOptions)
+	      .Build();
+	
+	    string[] scopes = ["https://vault.azure.net/.default"];
+	    AuthenticationResult result = await app.AcquireTokenForClient(scopes).ExecuteAsync().ConfigureAwait(false);
+	}
 }
 ```
