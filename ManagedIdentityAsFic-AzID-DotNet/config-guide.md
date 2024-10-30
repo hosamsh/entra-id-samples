@@ -1,6 +1,7 @@
 
-# Configure an App to trust a Managed Identity
-
+# Configure an App to trust a Managed Identity (Public Preview)
+> NOTE: this article is temporarily placed here for feedback gathering. It will be published on Microsoft's public documentation by the public preview time.
+> 
 This article describes how to configure An Entra App to trust a Managed Identity. You can then exchange the managed identity token for an access token that can access Microsoft Entra protected resources without needing to use or manage App secrets.
 
 ## Important considerations and restrictions
