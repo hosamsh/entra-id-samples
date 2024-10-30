@@ -88,7 +88,7 @@ To obtain the sample application, you can either clone it from GitHub or downloa
 To clone the sample, open a command prompt and navigate to where you wish to create the project, and enter the following command:
 
 ``` shell
-git clone https://github.com/hosamsh/entra-id-samples/ManagedIdentityAsFic-AzID-DotNet.git
+git clone https://github.com/hosamsh/entra-id-samples.git
 ```
 Download the .zip file. Extract it to a file path where the length of the name is fewer than 260 characters.
 
