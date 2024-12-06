@@ -1,0 +1,13 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <h2 class="display-4">This sample demonstrates using managed identity as a federated identity credentials in 3 scenarios:</h1>
+    <p><a asp-page="./Graph/Index">1. Access Microsoft Graph on behalf of the signed in user</a></p>
+    <p><a asp-page="./Storage/Index">2. Access Azure Storage in the same tenant</a></p>
+    <p><a asp-page="./Vault/Index">3. Access Azure KeyVault in another tenant</a></p>
+</div>
